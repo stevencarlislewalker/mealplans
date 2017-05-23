@@ -11,6 +11,12 @@ random_plan <- function(number_of_meals) {
            number_of_meals, replace = FALSE)
 }
 
+is_valid_meal <- function(meal) {
+    masterlist = readLines('masterlist')
+    recentlist = readLines('recentlist')
+    meal %in% setdiff(masterlist, recentlist)
+}
+
 list_meals <- function() {
     readLines('masterlist')
 }
@@ -28,8 +34,22 @@ clear_recentlist <- function() {
 
 e = list2env(list(plan = c()))
 
-propose <- function() {
-    e$proposal <- random_meal()
+#'
+#' 1. propose a meal
+#' 2. propose another or decide to use the proposal
+#' 3. continue until you're finished
+#'
+
+propose <- function(proposal) {
+    if(missing(proposal)) {
+        e$proposal <- random_meal()
+    } else if(is_valid_meal(proposal)) {
+        e$proposal <- proposal
+    } else {
+        cat('invalid proposal. perhaps you meant:\n')
+        print(list_meals()[order(adist(proposal, list_meals()))[1:5]])
+        stop()
+    }
     cat('current proposal: ', e$proposal, '\n')
 }
 
