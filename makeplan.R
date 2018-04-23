@@ -1,14 +1,18 @@
 library(lubridate)
 
-random_meal <- function(){
-    random_plan(1)
+random_meal <- function(meal_list){
+    random_plan(1, meal_list)
 }
 
-random_plan <- function(number_of_meals) {
+random_plan <- function(number_of_meals, meal_list) {
+  if(missing(meal_list)) {
     masterlist = list_meals(TRUE, FALSE)
-    recentlist = list_meals(TRUE, TRUE)
-    sample(setdiff(masterlist, recentlist),
-           number_of_meals, replace = FALSE)
+  } else {
+    masterlist = meal_list
+  }
+  recentlist = list_meals(TRUE, TRUE)
+  sample(setdiff(masterlist, recentlist),
+         number_of_meals, replace = FALSE)
 }
 
 is_valid_meal <- function(meal) {
@@ -46,26 +50,35 @@ drop_keywords <- function(meals) {
     sapply(strsplit(meals, ';'), '[', 1)
 }
 
+search_meals = function(pattern) {
+  grep(pattern, list_meals(), ignore.case = TRUE, value = TRUE)
+}
+
 e = list2env(list(plan = c()))
 
 #'
+#' 0. set the working directory
 #' 1. propose a meal
 #' 2. propose another or decide to use the proposal
 #' 3. continue until you're finished
 #'
 
-propose <- function(proposal) {
+propose <- function(proposal, pattern) {
+  if(missing(pattern)) {
     l = list_meals(TRUE)
-    if(missing(proposal)) {
-        e$proposal <- random_meal()
-    } else if(is_valid_meal(proposal)) {
-        e$proposal <- proposal
-    } else {
-        cat('invalid proposal. perhaps you meant:\n')
-        print(agrep(proposal, l, ignore.case = TRUE, value = TRUE))
-        stop()
-    }
-    cat('current proposal: ', e$proposal, '\n')
+  } else {
+    l = drop_keywords(search_meals(pattern))
+  }
+  if(missing(proposal)) {
+      e$proposal <- random_meal(l)
+  } else if(is_valid_meal(proposal)) {
+      e$proposal <- proposal
+  } else {
+      cat('invalid proposal. perhaps you meant:\n')
+      print(agrep(proposal, l, ignore.case = TRUE, value = TRUE))
+      stop()
+  }
+  cat('current proposal: ', e$proposal, '\n')
 }
 
 use <- function() {
@@ -78,3 +91,6 @@ finish <- function() {
     print(e$plan)
     use_meals(e$plan)
 }
+
+# himama = readLines('himama_lunch.txt')
+# writeLines(unique(sort(unlist(lapply(strsplit(himama, '[0-9]+\ ?servings?'), '[', -1)))), 'himama_lunches.txt')
